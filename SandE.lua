@@ -525,7 +525,7 @@ function SandE:UpdateUI()
                         -- d ( "MouseEnter " .. control:GetName() )
                         self.itemtool = ItemTooltip
                         InitializeTooltip(self.itemtool, SandE.UIItems[i][3], TOPLEFT, 0, 0, BOTTOMRIGHT)
-                        itemtool:SetLink(link)
+                        self.itemtool:SetLink(link)
                     end)
 
                     SandE.UIItems[i][3]:SetHandler("OnMouseExit", function (self)
