@@ -3,7 +3,7 @@ SandE = {}
 local SandE = SandE
 
 SandE.name = "SandE"
-SandE.version = 1.1
+SandE.version = 0.1
 SandE.displayName = ""
 SandE.displayName = SandE.displayName .. "|cffffff" .. "S" .. "|r"
 SandE.displayName = SandE.displayName .. "|ccccccc" .. "t" .. "|r"
@@ -115,46 +115,48 @@ SandE.Defaults.ui.offsetY = 194.69073486328
 SandE.Defaults.ui.buttonX = 0
 SandE.Defaults.ui.buttonY = 0
 SandE.Defaults.ui.showIcon = true
+SandE.Defaults.ui.autoShow = true
 
--- local function createSettings()
---     local LAM = LibStub("LibAddonMenu-2.0")
--- 
---     local settingsWindowData = {
---         type = "panel",
---         name = SandE.displayName,
---         author = "|caaffeFJodynn|r",
---         version = tostring(SandE.version),
---         slashCommand = "/outfitsettings"
---     }
--- 
---     local settingsOptionsData = {
---         {
---             type = "checkbox",
---             name = "Name",
---             tooltip = "Tooltip",
---             default = SandE.Defaults.value,
---             getFunc = function() return SandE.sv.value end,
---             setFunc = function(newValue)
---                 SandE.sv.value = newValue
---             end,
---         },
---     }
-        -- [2] = {
-        --     type = "checkbox",
-        --     name = "Show image button to open CPSlot's UI.",
-        --     tooltip = "Toggles whether or not you want to show the icon that tells you the keybinding and a button to open the UI and move around.",
-        --     default = ChampionPointsSlots.sv.ui.showIcon,
-        --     getFunc = function() return ChampionPointsSlots.sv.ui.showIcon end,
-        --     setFunc = function(newValue)
-        --         ChampionPointsSlots.sv.ui.showIcon = newValue
-        --         CPSlot_UI_ButtonBg:SetHidden(not newValue)
-        --         CPSlot_UI_Button:SetHidden(not newValue)
-        --     end,
-        -- },
--- 
---     local settingsOptionPanel = LAM:RegisterAddonPanel(SandE.name.."_LAM", settingsWindowData)
---     LAM:RegisterOptionControls(SandE.name.."_LAM", settingsOptionsData)
--- end
+local function createSettings()
+    local LAM = LibStub("LibAddonMenu-2.0")
+
+    local settingsWindowData = {
+        type = "panel",
+        name = SandE.displayName,
+        author = "|caaffeFJodynn|r",
+        version = tostring(SandE.version),
+        slashCommand = "/outfitsettings"
+    }
+
+    local settingsOptionsData = {
+        {
+            type = "checkbox",
+            name = "Auto show/hide",
+            tooltip = "When you open the Collection book choose to auto show/hide when it leaves",
+            default = SandE.Defaults.ui.autoShow,
+            getFunc = function() return SandE.sv.ui.autoShow end,
+            setFunc = function(newValue)
+                SandE.sv.ui.autoShow = newValue
+            end,
+        },
+        {
+            type = "checkbox",
+            name = "Show image button to open SandE's UI.",
+            tooltip = "Toggles whether or not you want to show the icon that tells you the keybinding and a button to open the UI and move around.",
+            default = SandE.sv.ui.showIcon,
+            getFunc = function() return SandE.sv.ui.showIcon end,
+            setFunc = function(newValue)
+                SandE.sv.ui.showIcon = newValue
+                Outfit_UI_ButtonBg:SetHidden(not newValue)
+                Outfit_UI_Button:SetHidden(not newValue)
+                Outfit_UI_ButtonLabel:SetHidden(not newValue)
+            end,
+        },
+    }
+
+    local settingsOptionPanel = LAM:RegisterAddonPanel(SandE.name.."_LAM", settingsWindowData)
+    LAM:RegisterOptionControls(SandE.name.."_LAM", settingsOptionsData)
+end
 
 function toggleSandEUI()
     SandEWindow:SetHidden(not SandEWindow:IsHidden())
@@ -485,25 +487,27 @@ function SandE:Initialize()
 
     ZO_CreateStringId("SI_CATEGORY_NAME_STYLE_AND_ELEGANCE", SandE.name)
     ZO_CreateStringId("SI_BINDING_NAME_SANDE_TOGGLE_UI", "Toggle UI")
-    -- createSettings()
-    COLLECTIONS_BOOK_SCENE:RegisterCallback("StateChange", function(oldstate, newState)
-        -- if ChampionPointsSlots.sv.ui.autoShow then
-            if(COLLECTIONS_BOOK_SCENE:IsShowing()) then
-                SandEWindow:SetHidden(false)
-            else
-                SandEWindow:SetHidden(true)
+
+    local scenes = {
+        COLLECTIONS_BOOK_SCENE,
+        GAMEPAD_COLLECTIONS_BOOK_SCENE,
+        ZO_OUTFIT_STYLES_BOOK_SCENE,
+        GAMEPAD_OUTFITS_SELECTION_SCENE,
+    }
+
+    for i, scene in ipairs(scenes) do
+        scene:RegisterCallback("StateChange", function(oldstate, newState)
+            if SandE.sv.ui.autoShow then
+                if(scene:IsShowing()) then
+                    SandEWindow:SetHidden(false)
+                else
+                    SandEWindow:SetHidden(true)
+                end
             end
-        -- end
-    end)
-    GAMEPAD_COLLECTIONS_BOOK_SCENE:RegisterCallback("StateChange", function(oldstate, newState)
-        -- if ChampionPointsSlots.sv.ui.autoShow then
-            if(COLLECTIONS_BOOK_SCENE:IsShowing()) then
-                SandEWindow:SetHidden(false)
-            else
-                SandEWindow:SetHidden(true)
-            end
-        -- end
-    end)
+        end)
+    end
+
+    createSettings()
 end
 
 function SandE:UpdateUI()
