@@ -108,6 +108,13 @@
                     </Controls>
                 </Backdrop>
 
+                <Button name="$(parent)RandomButton" font="ZoFontGame">
+                    <Dimensions x="100" y="40" />
+                    <Anchor relativeTo="$(parent)RenameEditBoxBackdropEditBox" relativePoint="TOPRIGHT" point="TOPLEFT" offsetX="20"/>
+                    <Textures normal="esoui/art/buttons/button_xlarge_mouseup.dds"
+                        mouseOver="esoui/art/buttons/button_xlarge_mouseover.dds" />
+                </Button>
+
                 <Button name="$(parent)_Item_2" inherits="Outfit_Item">
                     <Anchor relativeTo="$(parent)" relativePoint="BOTTOMLEFT" point="BOTTOMLEFT"/>
                 </Button>

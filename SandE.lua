@@ -3,7 +3,7 @@ SandE = {}
 local SandE = SandE
 
 SandE.name = "SandE"
-SandE.version = 0.2
+SandE.version = 0.3
 SandE.displayName = ""
 SandE.displayName = SandE.displayName .. "|cffffff" .. "S" .. "|r"
 SandE.displayName = SandE.displayName .. "|ccccccc" .. "t" .. "|r"
@@ -57,6 +57,7 @@ SandE.COLLECTIBLES = {
 }
 
 SandE.COLLECTIBLE_STRINGS = {
+    [COLLECTIBLE_CATEGORY_TYPE_MOUNT            ] = "|cffffffMount|r" ,
     [COLLECTIBLE_CATEGORY_TYPE_VANITY_PET       ] = "|cff0000Vanity Pet|r" ,
     [COLLECTIBLE_CATEGORY_TYPE_COSTUME          ] = "|cffaa00Costume|r" ,
     [COLLECTIBLE_CATEGORY_TYPE_PERSONALITY      ] = "|cffff00Personality|r" ,
@@ -231,6 +232,42 @@ function SandE:reloadComboBox2()
     KEYBINDING_MANAGER:RefreshList()
 end
 
+function SandE:GetRandom(catType)
+    local list = {0}
+    local count = 0
+    for i=count + 1, GetTotalCollectiblesByCategoryType(catType) do
+        local colId = GetCollectibleIdFromType(catType, i)
+        if IsCollectibleUnlocked(colId) and IsCollectibleUsable(colId) and IsCollectibleValidForPlayer(colId) then
+            count = count + 1
+            list[count] = colId
+        end
+    end
+
+    if count > 0 then
+        local ran = math.random(count)
+        local id = list[ran]
+
+        if SandE.currentType == SandE.CURRENT then
+            if id == 0 and i ~= COLLECTIBLE_CATEGORY_TYPE_MOUNT then
+                id = SandE.currentCurrent[i]
+                UseCollectible(id)
+            else
+                UseCollectible(id)
+            end
+        else
+            SandE.currentSlot[catType] = id
+        end
+    end
+end
+
+function SandE:GetRandomAll()
+    for i, x in ipairs(SandE.COLLECTIBLES) do
+        SandE:GetRandom(x)
+    end
+
+    SandE:UpdateUI()
+end
+
 function SandE:GetOutfitName(i)
     if i == 0 then
         return "No Outfit"
@@ -287,12 +324,10 @@ function SandE:Load()
 
             if IsCollectibleUsable(id) then
                 UseCollectible(id)
-                SandE.currentCurrent[i] = 0
             end
         elseif SandE.currentCurrent[i] ~= id then
             if IsCollectibleUsable(id) then
                 UseCollectible(id)
-                SandE.currentCurrent[i] = id
             end
         end
     end
@@ -397,6 +432,7 @@ function SandE:CreateWindow()
         SandEWindowSaveButton:SetHidden(false)
         SandEWindowLoadButton:SetHidden(false)
         SandEWindowDeleteButton:SetHidden(false)
+        SandEWindowRandomButton:SetHidden(false)
         SandEWindowRenameEditBoxBackdrop:SetHidden(false)
     end
 
@@ -416,10 +452,12 @@ function SandE:CreateWindow()
             SandE.currentType = SandE.CURRENT
             SandE.currentSlot = SandE.currentCurrent
             SandE:UpdateUI()
+            SandEWindowRandomButton:SetHidden(false)
         else
             o_comboBox2:SetHidden(false)
             SandE.currentType = SandE.USER
             SandE.reloadComboBox2()
+            SandEWindowRandomButton:SetHidden(true)
         end
     end
 
@@ -487,8 +525,36 @@ function SandE:CreateWindow()
     SandE:setTooltip(SandEWindowDeleteButton, "|cff0033Delete|r the current slot.")
     SandEWindowDeleteButton:SetText("|cff0033Delete ")
 
+    SandEWindowRandomButton:SetHandler("OnClicked", function() SandE:GetRandomAll() end)
+    SandE:setTooltip(SandEWindowRandomButton, "|cff00ffRandom|r, if current Randomize what you are currently wearing, if slot set it to random.")
+    SandEWindowRandomButton:SetText("|cff00ffRandom|r")
+
     SandEWindowCloseButton:SetHandler("OnClicked", function() SandE:Close() end)
     SandE:setTooltip(SandEWindowCloseButton, "Close Window")
+
+    for i, x in ipairs(SandE.COLLECTIBLES) do
+        SandE.UIItems[x][3]:SetHandler("OnMouseDown", function(self, button, ctrl, alt, shift)
+            if ( ctrl ) then
+                SandE:GetRandom(x)
+                if SandE.currentType ~= SandE.CURRENT then
+                    SandE:UpdateUI()
+                end
+            elseif ( shift ) then
+                id = SandE.currentCurrent[x]
+
+                if SandE.currentType == SandE.CURRENT then
+                    if i ~= COLLECTIBLE_CATEGORY_TYPE_MOUNT then
+                        UseCollectible(id)
+                    end
+                else
+                    SandE.currentSlot[x] = 0
+                    SandE:UpdateUI()
+                end
+            else
+                -- d("reg or alt")
+            end
+        end)
+    end
 end
 
 function SandE:Initialize()
@@ -641,7 +707,7 @@ function SandE:CD()
     end
 end
 
-EVENT_MANAGER:RegisterForEvent(SandE.name, EVENT_COLLECTIBLE_UPDATED, function(eventCode, id, justUnlocked)
+EVENT_MANAGER:RegisterForEvent(SandE.name, EVENT_COLLECTIBLE_UPDATED, function(eventCode, id, justUnlocked) -- {{{
     if SandE.disableUpdates then return end
 
     local catType = GetCollectibleCategoryType(id)
@@ -657,22 +723,32 @@ EVENT_MANAGER:RegisterForEvent(SandE.name, EVENT_COLLECTIBLE_UPDATED, function(e
             return
         end
     end
-end)
+end) -- }}}
 
-EVENT_MANAGER:RegisterForEvent(SandE.name, EVENT_ADD_ON_LOADED, function (event, addonName)
+-- EVENT_MANAGER:RegisterForEvent(SandE.name, EVENT_COLLECTIBLE_NOTIFICATION_NEW, function (eventCode, collectibleId, notificationId) -- {{{
+    -- local catType = GetCollectibleCategoryType(collectibleId)
+    -- for _, x in ipairs(SandE.COLLECTIBLES) do
+        -- if x == catType then
+            -- SandE.collectiblesOwned[catType][#SandE.collectiblesOwned[catType] + 1] = collectibleId
+            -- return
+        -- end
+    -- end
+-- end) -- }}}
+
+EVENT_MANAGER:RegisterForEvent(SandE.name, EVENT_ADD_ON_LOADED, function (event, addonName) -- {{{
     if addonName ~= SandE.name then return end
     SandE:Initialize()
-end)
+end) -- }}}
 
 EVENT_MANAGER:RegisterForEvent(SandE.name, EVENT_PLAYER_ACTIVATED, function(eventCode, initial) -- {{{
     SandE:CD()
-end)
+end) -- }}}
 
 EVENT_MANAGER:RegisterForEvent(SandE.name, EVENT_OUTFIT_RENAME_RESPONSE, function(eventCode, response, outfitIndex) -- {{{
     if response == SET_OUTFIT_NAME_RESULT_SUCCESS then
         SandE:SetupOutfitCombo()
     end
-end)
+end) -- }}}
 
 EVENT_MANAGER:RegisterForEvent(SandE.name, EVENT_OUTFIT_EQUIP_RESPONSE, function(eventCode, response) -- {{{
     if response == EQUIP_OUTFIT_RESULT_SUCCESS then
@@ -680,14 +756,14 @@ EVENT_MANAGER:RegisterForEvent(SandE.name, EVENT_OUTFIT_EQUIP_RESPONSE, function
             SandE:SetupOutfitCombo()
         end
     end
-end)
+end) -- }}}
 
-EVENT_MANAGER:RegisterForEvent(SandE.name, EVENT_KEYBINDING_SET, function(eventCode, layerIndex, categoryIndex, actionIndex, bindingIndex, keyCode)
+EVENT_MANAGER:RegisterForEvent(SandE.name, EVENT_KEYBINDING_SET, function(eventCode, layerIndex, categoryIndex, actionIndex, bindingIndex, keyCode) -- {{{
     if layerIndex == nil or categoryIndex == nil or actionIndex == nil then
         Outfit_UI_ButtonLabel:SetText("")
     elseif layerIndex == SandE.layerIndex and categoryIndex == SandE.categoryIndex and actionIndex == SandE.actionIndex then
         Outfit_UI_ButtonLabel:SetText(GetKeyName(keyCode))
     end
-end)
+end) -- }}}
 
 -- EVENT_MANAGER:RegisterForEvent(COLLECTIONS_BOOK_SCENE)
