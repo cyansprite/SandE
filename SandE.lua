@@ -3,7 +3,7 @@ SandE = {}
 local SandE = SandE
 
 SandE.name = "SandE"
-SandE.version = 0.1
+SandE.version = 0.2
 SandE.displayName = ""
 SandE.displayName = SandE.displayName .. "|cffffff" .. "S" .. "|r"
 SandE.displayName = SandE.displayName .. "|ccccccc" .. "t" .. "|r"
@@ -36,6 +36,7 @@ SandE.currentCurrent = nil
 SandE.currentSlot = nil
 SandE.currentIndex = -1
 SandE.disableUpdates = false
+SandE.bindingStartingIndex = -1
 
 SandE.NEW = "+  - New - +"
 
@@ -102,6 +103,23 @@ SandE.Template = {
     [COLLECTIBLE_CATEGORY_TYPE_BODY_MARKING     ] = 0,
 }
 
+SandE.BINDING_NAMES = {
+    "SI_BINDING_NAME_SANDE_BIND1",
+    "SI_BINDING_NAME_SANDE_BIND2",
+    "SI_BINDING_NAME_SANDE_BIND3",
+    "SI_BINDING_NAME_SANDE_BIND4",
+    "SI_BINDING_NAME_SANDE_BIND5",
+    "SI_BINDING_NAME_SANDE_BIND6",
+    "SI_BINDING_NAME_SANDE_BIND7",
+    "SI_BINDING_NAME_SANDE_BIND8",
+    "SI_BINDING_NAME_SANDE_BIND9",
+    "SI_BINDING_NAME_SANDE_BIND10",
+    "SI_BINDING_NAME_SANDE_BIND11",
+    "SI_BINDING_NAME_SANDE_BIND12",
+}
+
+SandE.BINDING_IDS = { }
+
 SandE.Defaults = {}
 SandE.Defaults.User = {}
 SandE.Defaults.UserOutfit = {}
@@ -162,6 +180,28 @@ function toggleSandEUI()
     SandEWindow:SetHidden(not SandEWindow:IsHidden())
 end
 
+function selectSandEKeyBinding(bind)
+    -- if we don't have one yet lol
+    if SandE.sv.userCount < bind then
+        return
+    end
+
+    SandE.currentIndex = bind
+    SandE.currentSlot = SandE.sv.User[SandE.currentIndex]
+
+    SandE:Load()
+
+    -- o_comboBox2:SetHidden(true)
+
+    -- SandE.currentType = SandE.CURRENT
+    -- SandE.currentSlot = SandE.currentCurrent
+    -- SandE:UpdateUI()
+
+    -- this theo should work
+    -- SandE.mainComboBox:UpdateItems()
+    SandE.mainComboBox:SelectFirstItem()
+end
+
 function SandE:Open()
     SandEWindow:SetHidden(false)
 end
@@ -180,7 +220,15 @@ function SandE:reloadComboBox2()
         local entryName = SandE:getEntryName(i, SandE.sv.UserMap[i])
         itemEntry = SandE.comboBox2:CreateItemEntry(entryName, OutfitSelectCallback)
         SandE.comboBox2:AddItem(itemEntry, ZO_COMBOBOX_SURPRESS_UPDATE)
+        -- ZO_CreateStringId(SandE.BINDING_NAMES[i], entryName)
+        EsoStrings[SandE.bindingStartingIndex + i - 1] = entryName
     end
+
+    for i=SandE.sv.userCount + 1, #SandE.BINDING_NAMES do
+        EsoStrings[SandE.bindingStartingIndex + i - 1] = "NO OUTFIT MADE YET : " .. tostring(i)
+    end
+
+    KEYBINDING_MANAGER:RefreshList()
 end
 
 function SandE:GetOutfitName(i)
@@ -199,7 +247,9 @@ function SandE:RenameUser(text)
     SandE.sv.UserMap[SandE.currentIndex] = text
 
     SandE:reloadComboBox2()
-    SandE.comboBox2:SetSelectedItem(SandE:getEntryName(SandE.currentIndex, text))
+
+    local entryName = SandE:getEntryName(SandE.currentIndex, text)
+    SandE.comboBox2:SetSelectedItem(entryName)
 
     SandEWindowRenameEditBoxBackdropEditBox:SetText("Rename")
     SandEWindowRenameEditBoxBackdropEditBox:SetColor(.7,.7,.5,.5)
@@ -214,6 +264,8 @@ function SandE:Delete()
 
     SandE.mainComboBox:UpdateItems()
     SandE.mainComboBox:SelectFirstItem()
+
+    SandE:reloadComboBox2()
 end
 
 function SandE:Save()
@@ -332,9 +384,9 @@ function SandE:CreateWindow()
             local name = SandE:getEntryName(SandE.sv.userCount, "New")
             local itemEntry = SandE.comboBox2:CreateItemEntry(name, OutfitSelectCallback)
             SandE.comboBox2:AddItem(itemEntry, ZO_COMBOBOX_SURPRESS_UPDATE)
-            SandE.comboBox2:SetSelectedItem(name)
-
             SandE.currentIndex = SandE.sv.userCount
+            SandE:reloadComboBox2()
+            SandE.comboBox2:SetSelectedItem(name)
         else
             SandE.currentIndex = tonumber(string.match(itemName, "%d+"))
         end
@@ -390,6 +442,7 @@ function SandE:CreateWindow()
     end
 
     SandE:SetupOutfitCombo()
+    SandE:reloadComboBox2()
 
     SandE:CD()
 
@@ -439,6 +492,18 @@ function SandE:CreateWindow()
 end
 
 function SandE:Initialize()
+    ZO_CreateStringId("SI_CATEGORY_NAME_STYLE_AND_ELEGANCE", SandE.name)
+    ZO_CreateStringId("SI_BINDING_NAME_SANDE_TOGGLE_UI", "Toggle UI")
+    for i, x in ipairs(SandE.BINDING_NAMES) do
+        ZO_CreateStringId(x, "NO OUTFIT MADE YET : " .. tostring(i))
+    end
+
+    for i=7756, #EsoStrings do
+        if EsoStrings[i] == "NO OUTFIT MADE YET : 1" then
+            SandE.bindingStartingIndex = i
+        end
+    end
+
     SandE.sv = ZO_SavedVars:New("SandE_sv", 1, nil, SandE.Defaults)
 
     SandEWindow:ClearAnchors()
@@ -484,9 +549,6 @@ function SandE:Initialize()
         keycode, _, _, _, _ = GetActionBindingInfo(SandE.layerIndex, SandE.categoryIndex, SandE.actionIndex)
         Outfit_UI_ButtonLabel:SetText(GetKeyName(keycode))
     end
-
-    ZO_CreateStringId("SI_CATEGORY_NAME_STYLE_AND_ELEGANCE", SandE.name)
-    ZO_CreateStringId("SI_BINDING_NAME_SANDE_TOGGLE_UI", "Toggle UI")
 
     local scenes = {
         COLLECTIONS_BOOK_SCENE,
