@@ -98,6 +98,11 @@
                     <Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetY="45" offsetX="5" />
                 </Control>
 
+                <Control name="$(parent)Dropdown4" inherits="ZO_ScrollableComboBox" >
+                    <Dimensions x="200" y="30" />
+                    <Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetY="45" offsetX="-5" />
+                </Control>
+
                 <Backdrop name="$(parent)RenameEditBoxBackdrop" edgeColor="00000000" centerColor="77777766" alpha="1.0" hidden="true">
                     <Edge edgeSize="1" />
                     <Dimensions x="200" y="30" />

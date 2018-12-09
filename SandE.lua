@@ -3,7 +3,7 @@ SandE = {}
 local SandE = SandE
 
 SandE.name = "SandE"
-SandE.version = 0.3
+SandE.version = 1.0
 SandE.displayName = ""
 SandE.displayName = SandE.displayName .. "|cffffff" .. "S" .. "|r"
 SandE.displayName = SandE.displayName .. "|ccccccc" .. "t" .. "|r"
@@ -124,6 +124,7 @@ SandE.BINDING_IDS = { }
 SandE.Defaults = {}
 SandE.Defaults.User = {}
 SandE.Defaults.UserOutfit = {}
+SandE.Defaults.UserTitle = {}
 SandE.Defaults.UserMap = {}
 SandE.Defaults.userCount = 0
 SandE.Defaults.ui = {}
@@ -276,6 +277,14 @@ function SandE:GetOutfitName(i)
     end
 end
 
+function SandE:GetTitle(i)
+    if i == 0 then
+        return "No Title"
+    else
+        return GetTitle(i)
+    end
+end
+
 function SandE:RenameUser(text)
     if text == nil or text == '' then
         return
@@ -295,6 +304,7 @@ end
 function SandE:Delete()
     table.remove(SandE.sv.User, SandE.currentIndex)
     table.remove(SandE.sv.UserOutfit, SandE.currentIndex)
+    table.remove(SandE.sv.UserTitle, SandE.currentIndex)
     table.remove(SandE.sv.UserMap, SandE.currentIndex)
 
     SandE.sv.userCount = SandE.sv.userCount - 1
@@ -311,6 +321,7 @@ function SandE:Save()
     end
 
     SandE.sv.UserOutfit[SandE.currentIndex] = GetEquippedOutfitIndex() or 0
+    SandE.sv.UserTitle[SandE.currentIndex] = GetCurrentTitleIndex() or 0
 
     SandE:UpdateUI()
 end
@@ -339,6 +350,8 @@ function SandE:Load()
         EquipOutfit(index)
     end
 
+    SelectTitle(SandE.sv.UserTitle[SandE.currentIndex])
+
     SandE.disableUpdates = false
 end
 
@@ -357,15 +370,10 @@ function SandE:SetupOutfitCombo()
     SandE.comboBox3:ClearItems()
 
     local FIRST_INDEX = 0
-    local LAST_INDEX  = 10
+    local LAST_INDEX  = GetNumUnlockedOutfits()
 
     for i=FIRST_INDEX, LAST_INDEX do
         local name = SandE:GetOutfitName(i)
-
-        if name:len() == 0 then
-            break
-        end
-
         name = SandE:getEntryName(i, name)
         local itemEntry = SandE.mainComboBox:CreateItemEntry(name, OutfitIndexCallback)
         SandE.comboBox3:AddItem(itemEntry, ZO_COMBOBOX_SURPRESS_UPDATE)
@@ -376,20 +384,38 @@ function SandE:SetupOutfitCombo()
     SandE.comboBox3:SetSelectedItem(SandE:getEntryName(index, SandE:GetOutfitName(index)))
 end
 
+function SandE:SetupTitleCombo()
+    SandE.comboBox4:ClearItems()
+
+    for i=0, GetNumTitles() do
+        local name = SandE:GetTitle(i)
+        name = SandE:getEntryName(i, name)
+        local itemEntry = SandE.mainComboBox:CreateItemEntry(name, OutfitTitleIndexCallback)
+        SandE.comboBox4:AddItem(itemEntry, ZO_COMBOBOX_SURPRESS_UPDATE)
+    end
+
+    SandE.comboBox4:UpdateItems()
+    local index = GetCurrentTitleIndex() or 0
+    SandE.comboBox4:SetSelectedItem(SandE:getEntryName(index, SandE:GetTitle(index)))
+end
+
 function SandE:CreateWindow()
     local o_comboBox = WINDOW_MANAGER:GetControlByName("SandEWindow", "Dropdown")
     local o_comboBox2 = WINDOW_MANAGER:GetControlByName("SandEWindow", "Dropdown2")
     local o_comboBox3 = WINDOW_MANAGER:GetControlByName("SandEWindow", "Dropdown3")
+    local o_comboBox4 = WINDOW_MANAGER:GetControlByName("SandEWindow", "Dropdown4")
 
     SandE:setTooltip(o_comboBox3, "If you are currently looking at your current outfit, set it to that outfit, if you are looking at a custom user outfit, then set it for that loadout.")
 
     SandE.mainComboBox   = o_comboBox.m_comboBox
     SandE.comboBox2  = o_comboBox2.m_comboBox
     SandE.comboBox3  = o_comboBox3.m_comboBox
+    SandE.comboBox4  = o_comboBox4.m_comboBox
 
     SandE.mainComboBox:SetSortsItems(true)
     SandE.comboBox2:SetSortsItems(true)
     SandE.comboBox3:SetSortsItems(true)
+    SandE.comboBox4:SetSortsItems(true)
 
     SandE.mainComboBox:ClearItems()
     SandE.comboBox2:ClearItems()
@@ -414,6 +440,7 @@ function SandE:CreateWindow()
                 [COLLECTIBLE_CATEGORY_TYPE_BODY_MARKING     ] = 0,
             }
             SandE.sv.UserOutfit[SandE.sv.userCount] = 0
+            SandE.sv.UserTitle[SandE.sv.userCount] = 0
             SandE.sv.UserMap[SandE.sv.userCount] = "New"
 
             local name = SandE:getEntryName(SandE.sv.userCount, "New")
@@ -474,12 +501,22 @@ function SandE:CreateWindow()
         end
     end
 
+    function OutfitTitleIndexCallback(comboBox, itemName, item, selectionChanged)
+        local index = tonumber(string.match(itemName, "%d+"))
+        if SandE.currentType == SandE.CURRENT then
+            SelectTitle(index)
+        else
+            SandE.sv.UserTitle[SandE.currentIndex] = index
+        end
+    end
+
     for _, name in ipairs(SandE.configTypes) do
         local itemEntry = SandE.mainComboBox:CreateItemEntry(name, OutfitConfigCallback)
         SandE.mainComboBox:AddItem(itemEntry, ZO_COMBOBOX_SURPRESS_UPDATE)
     end
 
     SandE:SetupOutfitCombo()
+    SandE:SetupTitleCombo()
     SandE:reloadComboBox2()
 
     SandE:CD()
@@ -684,15 +721,19 @@ function SandE:UpdateUI()
     end
 
     local index = 0
+    local titleIndex = 0
 
     if SandE.currentType == SandE.CURRENT then
         index = GetEquippedOutfitIndex() or 0
+        titleIndex = GetCurrentTitleIndex() or 0
     else
         index = SandE.sv.UserOutfit[SandE.currentIndex]
+        titleIndex = SandE.sv.UserTitle[SandE.currentIndex]
     end
 
     if SandE.currentIndex ~= -1 then
         SandE.comboBox3:SetSelectedItem(SandE:getEntryName(index, SandE:GetOutfitName(index)))
+        SandE.comboBox4:SetSelectedItem(SandE:getEntryName(index, SandE:GetTitle(titleIndex)))
     end
 
     Outfit_UI_Button:SetHidden(not SandE.sv.ui.showIcon)
