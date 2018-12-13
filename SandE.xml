@@ -106,19 +106,12 @@
                 <Backdrop name="$(parent)RenameEditBoxBackdrop" edgeColor="00000000" centerColor="77777766" alpha="1.0" hidden="true">
                     <Edge edgeSize="1" />
                     <Dimensions x="200" y="30" />
-                    <Anchor point="TOPLEFT" relativeTo="$(parent)Dropdown2" relativePoint="BOTTOMLEFT" offsetX="-100" offsetY="5" />
+                    <Anchor point="TOPLEFT" relativeTo="$(parent)Dropdown" relativePoint="BOTTOMLEFT" offsetX="-20" offsetY="7" />
                     <Controls>
                         <EditBox name="$(parent)EditBox" inherits="ZO_DefaultEditForBackdrop" >
                         </EditBox>
                     </Controls>
                 </Backdrop>
-
-                <Button name="$(parent)RandomButton" font="ZoFontGame">
-                    <Dimensions x="100" y="40" />
-                    <Anchor relativeTo="$(parent)RenameEditBoxBackdropEditBox" relativePoint="TOPRIGHT" point="TOPLEFT" offsetX="20"/>
-                    <Textures normal="esoui/art/buttons/button_xlarge_mouseup.dds"
-                        mouseOver="esoui/art/buttons/button_xlarge_mouseover.dds" />
-                </Button>
 
                 <Button name="$(parent)_Item_2" inherits="Outfit_Item">
                     <Anchor relativeTo="$(parent)" relativePoint="BOTTOMLEFT" point="BOTTOMLEFT"/>
@@ -181,10 +174,18 @@
 
                 <Button name="$(parent)DeleteButton" font="ZoFontGame">
                     <Dimensions x="100" y="40" />
-                    <Anchor relativeTo="$(parent)" relativePoint="CENTER" point="CENTER" offsetY="20"/>
+                    <Anchor relativeTo="$(parent)" relativePoint="CENTER" point="CENTER" offsetX="-50" offsetY="20"/>
                     <Textures normal="esoui/art/buttons/button_xlarge_mouseup.dds"
                         mouseOver="esoui/art/buttons/button_xlarge_mouseover.dds" />
                 </Button>
+
+                <Button name="$(parent)RandomButton" font="ZoFontGame">
+                    <Dimensions x="100" y="40" />
+                    <Anchor relativeTo="$(parent)" relativePoint="CENTER" point="CENTER" offsetX="70" offsetY="20"/>
+                    <Textures normal="esoui/art/buttons/button_xlarge_mouseup.dds"
+                        mouseOver="esoui/art/buttons/button_xlarge_mouseover.dds" />
+                </Button>
+
 
                 <Button name="$(parent)LoadButton" font="ZoFontGame">
                     <Dimensions x="100" y="40" />
