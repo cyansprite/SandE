@@ -103,6 +103,36 @@
                     <Anchor point="TOPRIGHT" relativeTo="$(parent)" relativePoint="TOPRIGHT" offsetY="45" offsetX="-5" />
                 </Control>
 
+                <Button name="$(parent)Stam_Check" inherits="ZO_CheckButton">
+                    <Dimensions x="20" y="20" />
+                    <Anchor point="TOPLEFT" relativeTo="$(parent)Dropdown3" relativePoint="BOTTOMLEFT" offsetY="1"/>
+                    <Controls>
+                        <Label name="$(parent)_Title" font="ZoFontGame" text="Stamina" >
+                            <Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="20"/>
+                        </Label>
+                    </Controls>
+                </Button>
+
+                <Button name="$(parent)Speed_Check" inherits="ZO_CheckButton">
+                    <Dimensions x="20" y="20" />
+                    <Anchor point="TOPLEFT" relativeTo="$(parent)Stam_Check" relativePoint="BOTTOMLEFT" offsetY="1"/>
+                    <Controls>
+                        <Label name="$(parent)_Title" font="ZoFontGame" text="Speed" >
+                            <Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="20"/>
+                        </Label>
+                    </Controls>
+                </Button>
+
+                <Button name="$(parent)Inventory_Check" inherits="ZO_CheckButton">
+                    <Dimensions x="20" y="20" />
+                    <Anchor point="TOPLEFT" relativeTo="$(parent)Speed_Check" relativePoint="BOTTOMLEFT" offsetY="1"/>
+                    <Controls>
+                        <Label name="$(parent)_Title" font="ZoFontGame" text="Inventory" >
+                            <Anchor point="TOPLEFT" relativeTo="$(parent)" relativePoint="TOPLEFT" offsetX="20"/>
+                        </Label>
+                    </Controls>
+                </Button>
+
                 <Backdrop name="$(parent)RenameEditBoxBackdrop" edgeColor="00000000" centerColor="77777766" alpha="1.0" hidden="true">
                     <Edge edgeSize="1" />
                     <Dimensions x="200" y="30" />
@@ -165,16 +195,17 @@
                     <Anchor relativeTo="$(parent)_Item_17" relativePoint="TOPRIGHT" point="TOPLEFT"/>
                 </Button>
 
-                <Button name="$(parent)SaveButton" font="ZoFontGame">
-                    <Dimensions x="100" y="40" />
-                    <Anchor relativeTo="$(parent)" relativePoint="LEFT" point="LEFT" offsetY="20"/>
-                    <Textures normal="esoui/art/buttons/button_xlarge_mouseup.dds"
-                        mouseOver="esoui/art/buttons/button_xlarge_mouseover.dds" />
-                </Button>
 
                 <Button name="$(parent)DeleteButton" font="ZoFontGame">
                     <Dimensions x="100" y="40" />
                     <Anchor relativeTo="$(parent)" relativePoint="CENTER" point="CENTER" offsetX="-50" offsetY="20"/>
+                    <Textures normal="esoui/art/buttons/button_xlarge_mouseup.dds"
+                        mouseOver="esoui/art/buttons/button_xlarge_mouseover.dds" />
+                </Button>
+
+                <Button name="$(parent)SaveButton" font="ZoFontGame">
+                    <Dimensions x="100" y="40" />
+                    <Anchor relativeTo="$(parent)DeleteButton" relativePoint="LEFT" point="RIGHT" offsetX="-20"/>
                     <Textures normal="esoui/art/buttons/button_xlarge_mouseup.dds"
                         mouseOver="esoui/art/buttons/button_xlarge_mouseover.dds" />
                 </Button>

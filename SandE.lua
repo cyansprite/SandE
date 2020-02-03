@@ -3,7 +3,7 @@ SandE = {}
 local SandE = SandE
 
 SandE.name = "SandE"
-SandE.version = 1.0
+SandE.version = 1.3
 SandE.displayName = ""
 SandE.displayName = SandE.displayName .. "|cffffff" .. "S" .. "|r"
 SandE.displayName = SandE.displayName .. "|ccccccc" .. "t" .. "|r"
@@ -125,6 +125,7 @@ SandE.Defaults = {}
 SandE.Defaults.User = {}
 SandE.Defaults.UserOutfit = {}
 SandE.Defaults.UserTitle = {}
+SandE.Defaults.UserMountOptions = {}
 SandE.Defaults.UserMap = {}
 SandE.Defaults.userCount = 0
 SandE.Defaults.ui = {}
@@ -183,7 +184,7 @@ function toggleSandEUI()
 end
 
 function selectSandEKeyBinding(bind)
-    -- if we don't have one yet lol
+    -- if we dont have one yet lol
     if SandE.sv.userCount < bind then
         return
     end
@@ -306,6 +307,7 @@ function SandE:Delete()
     table.remove(SandE.sv.UserOutfit, SandE.currentIndex)
     table.remove(SandE.sv.UserTitle, SandE.currentIndex)
     table.remove(SandE.sv.UserMap, SandE.currentIndex)
+    table.remove(SandE.sv.UserMountOptions, SandE.currentIndex)
 
     SandE.sv.userCount = SandE.sv.userCount - 1
 
@@ -322,6 +324,11 @@ function SandE:Save()
 
     SandE.sv.UserOutfit[SandE.currentIndex] = GetEquippedOutfitIndex() or 0
     SandE.sv.UserTitle[SandE.currentIndex] = GetCurrentTitleIndex() or 0
+    SandE.sv.UserMountOptions[SandE.currentIndex] = {
+        GetSetting(SETTING_TYPE_IN_WORLD, IN_WORLD_UI_SETTING_HIDE_MOUNT_STAMINA_UPGRADE),
+        GetSetting(SETTING_TYPE_IN_WORLD, IN_WORLD_UI_SETTING_HIDE_MOUNT_SPEED_UPGRADE),
+        GetSetting(SETTING_TYPE_IN_WORLD, IN_WORLD_UI_SETTING_HIDE_MOUNT_INVENTORY_UPGRADE)
+    }
 
     SandE:UpdateUI()
 end
@@ -352,11 +359,21 @@ function SandE:Load()
 
     SelectTitle(SandE.sv.UserTitle[SandE.currentIndex])
 
+    SetSetting(SETTING_TYPE_IN_WORLD, IN_WORLD_UI_SETTING_HIDE_MOUNT_STAMINA_UPGRADE, SandE.sv.UserMountOptions[SandE.currentIndex][1])
+    SetSetting(SETTING_TYPE_IN_WORLD, IN_WORLD_UI_SETTING_HIDE_MOUNT_SPEED_UPGRADE, SandE.sv.UserMountOptions[SandE.currentIndex][2])
+    SetSetting(SETTING_TYPE_IN_WORLD, IN_WORLD_UI_SETTING_HIDE_MOUNT_INVENTORY_UPGRADE, SandE.sv.UserMountOptions[SandE.currentIndex][3])
+
     SandE.disableUpdates = false
 end
 
 function SandE:getEntryName(index, name)
-    return string.format("%d : %s", index, name)
+    -- if either are nil, ignore..
+
+    if ( index == nil or name == nil ) then
+        return ""
+    else
+        return string.format("%d : %s", index, name)
+    end
 end
 
 function SandE:setTooltip(control, text)
@@ -367,7 +384,7 @@ function SandE:setTooltip(control, text)
 end
 
 function SandE:SetupOutfitCombo()
-    SandE.comboBox3:ClearItems()
+    SandE.outfitComboBox:ClearItems()
 
     local FIRST_INDEX = 0
     local LAST_INDEX  = GetNumUnlockedOutfits()
@@ -376,49 +393,88 @@ function SandE:SetupOutfitCombo()
         local name = SandE:GetOutfitName(i)
         name = SandE:getEntryName(i, name)
         local itemEntry = SandE.mainComboBox:CreateItemEntry(name, OutfitIndexCallback)
-        SandE.comboBox3:AddItem(itemEntry, ZO_COMBOBOX_SURPRESS_UPDATE)
+        SandE.outfitComboBox:AddItem(itemEntry, ZO_COMBOBOX_SURPRESS_UPDATE)
     end
 
-    SandE.comboBox3:UpdateItems()
+    SandE.outfitComboBox:UpdateItems()
     local index = GetEquippedOutfitIndex() or 0
-    SandE.comboBox3:SetSelectedItem(SandE:getEntryName(index, SandE:GetOutfitName(index)))
+    SandE.outfitComboBox:SetSelectedItem(SandE:getEntryName(index, SandE:GetOutfitName(index)))
 end
 
 function SandE:SetupTitleCombo()
-    SandE.comboBox4:ClearItems()
+    SandE.titleComboBox:ClearItems()
 
     for i=0, GetNumTitles() do
         local name = SandE:GetTitle(i)
         name = SandE:getEntryName(i, name)
         local itemEntry = SandE.mainComboBox:CreateItemEntry(name, OutfitTitleIndexCallback)
-        SandE.comboBox4:AddItem(itemEntry, ZO_COMBOBOX_SURPRESS_UPDATE)
+        SandE.titleComboBox:AddItem(itemEntry, ZO_COMBOBOX_SURPRESS_UPDATE)
     end
 
-    SandE.comboBox4:UpdateItems()
+    SandE.titleComboBox:UpdateItems()
     local index = GetCurrentTitleIndex() or 0
-    SandE.comboBox4:SetSelectedItem(SandE:getEntryName(index, SandE:GetTitle(index)))
+    SandE.titleComboBox:SetSelectedItem(SandE:getEntryName(index, SandE:GetTitle(index)))
 end
 
 function SandE:CreateWindow()
     local o_comboBox = WINDOW_MANAGER:GetControlByName("SandEWindow", "Dropdown")
     local o_comboBox2 = WINDOW_MANAGER:GetControlByName("SandEWindow", "Dropdown2")
-    local o_comboBox3 = WINDOW_MANAGER:GetControlByName("SandEWindow", "Dropdown3")
-    local o_comboBox4 = WINDOW_MANAGER:GetControlByName("SandEWindow", "Dropdown4")
+    local o_outfitComboBox = WINDOW_MANAGER:GetControlByName("SandEWindow", "Dropdown3")
+    local o_titleComboBox = WINDOW_MANAGER:GetControlByName("SandEWindow", "Dropdown4")
+    SandE.o_stamCheck  = WINDOW_MANAGER:GetControlByName("SandEWindow", "Stam_Check")
+    SandE.o_speedCheck  = WINDOW_MANAGER:GetControlByName("SandEWindow", "Speed_Check")
+    SandE.o_inventoryCheck  = WINDOW_MANAGER:GetControlByName("SandEWindow", "Inventory_Check")
 
-    SandE:setTooltip(o_comboBox3, "If you are currently looking at your current outfit, set it to that outfit, if you are looking at a custom user outfit, then set it for that loadout.")
+    SandE:setTooltip(SandE.o_stamCheck, "Show stamina mount upgrades.")
+    SandE:setTooltip(SandE.o_speedCheck, "Show speed mount upgrades.")
+    SandE:setTooltip(SandE.o_inventoryCheck, "Show inventory mount upgrades.")
+
+    SandE:setTooltip(o_outfitComboBox, "If you are currently looking at your current outfit, set it to that outfit, if you are looking at a custom user outfit, then set it for that loadout.")
 
     SandE.mainComboBox   = o_comboBox.m_comboBox
     SandE.comboBox2  = o_comboBox2.m_comboBox
-    SandE.comboBox3  = o_comboBox3.m_comboBox
-    SandE.comboBox4  = o_comboBox4.m_comboBox
+    SandE.outfitComboBox  = o_outfitComboBox.m_comboBox
+    SandE.titleComboBox  = o_titleComboBox.m_comboBox
 
     SandE.mainComboBox:SetSortsItems(true)
     SandE.comboBox2:SetSortsItems(true)
-    SandE.comboBox3:SetSortsItems(true)
-    SandE.comboBox4:SetSortsItems(true)
+    SandE.outfitComboBox:SetSortsItems(true)
+    SandE.titleComboBox:SetSortsItems(true)
 
     SandE.mainComboBox:ClearItems()
     SandE.comboBox2:ClearItems()
+
+    SandE.mainComboBox.m_dropdown:SetHandler("OnShow", function(self)
+        self:SetDimensions(500,40)
+    end)
+
+    SandE.mainComboBox.m_dropdown:SetHandler("OnHide", function(self)
+        self:SetDimensions(50,40)
+    end)
+
+    SandE.comboBox2.m_dropdown:SetHandler("OnShow", function(self)
+        self:SetDimensions(500,40)
+    end)
+
+    SandE.comboBox2.m_dropdown:SetHandler("OnHide", function(self)
+        self:SetDimensions(50,40)
+    end)
+
+    SandE.outfitComboBox.m_dropdown:SetHandler("OnShow", function(self)
+        self:SetDimensions(500,40)
+    end)
+
+    SandE.outfitComboBox.m_dropdown:SetHandler("OnHide", function(self)
+        self:SetDimensions(50,40)
+    end)
+
+    SandE.titleComboBox.m_dropdown:SetHandler("OnShow", function(self)
+        self:SetDimensions(500,40)
+    end)
+
+    SandE.titleComboBox.m_dropdown:SetHandler("OnHide", function(self)
+        self:SetDimensions(50,40)
+    end)
 
     function OutfitSelectCallback(comboBox, itemName, item, selectionChanged)
         if itemName == SandE.NEW then
@@ -441,6 +497,11 @@ function SandE:CreateWindow()
             }
             SandE.sv.UserOutfit[SandE.sv.userCount] = 0
             SandE.sv.UserTitle[SandE.sv.userCount] = 0
+            SandE.sv.UserMountOptions[SandE.currentIndex] = {
+                GetSetting(SETTING_TYPE_IN_WORLD, IN_WORLD_UI_SETTING_HIDE_MOUNT_STAMINA_UPGRADE),
+                GetSetting(SETTING_TYPE_IN_WORLD, IN_WORLD_UI_SETTING_HIDE_MOUNT_SPEED_UPGRADE),
+                GetSetting(SETTING_TYPE_IN_WORLD, IN_WORLD_UI_SETTING_HIDE_MOUNT_INVENTORY_UPGRADE)
+            }
             SandE.sv.UserMap[SandE.sv.userCount] = "New"
 
             local name = SandE:getEntryName(SandE.sv.userCount, "New")
@@ -571,6 +632,11 @@ function SandE:CreateWindow()
 
     for i, x in ipairs(SandE.COLLECTIBLES) do
         SandE.UIItems[x][3]:SetHandler("OnMouseDown", function(self, button, ctrl, alt, shift)
+            if SandE.currentSlot == nil then
+                d ( "You need to select a slot or current first." )
+                return
+            end
+
             if ( ctrl ) then
                 SandE:GetRandom(x)
                 if SandE.currentType ~= SandE.CURRENT then
@@ -591,7 +657,33 @@ function SandE:CreateWindow()
                 -- d("reg or alt")
             end
         end)
+
     end
+
+    local function mountToggle(check, setting, ind)
+        local val = 1
+        if ZO_CheckButton_IsChecked(check) then val = 0 end
+
+        if SandE.currentType == SandE.CURRENT then
+            SetSetting(SETTING_TYPE_IN_WORLD, setting, val)
+        else
+            if SandE.currentIndex ~= -1 then
+                SandE.sv.UserMountOptions[SandE.currentIndex][ind] = val
+            end
+        end
+    end
+
+    ZO_CheckButton_SetToggleFunction(SandE.o_stamCheck, function()
+        mountToggle(SandE.o_stamCheck, IN_WORLD_UI_SETTING_HIDE_MOUNT_STAMINA_UPGRADE, 1)
+    end)
+
+    ZO_CheckButton_SetToggleFunction(SandE.o_speedCheck, function()
+        mountToggle(SandE.o_speedCheck, IN_WORLD_UI_SETTING_HIDE_MOUNT_SPEED_UPGRADE, 2)
+    end)
+
+    ZO_CheckButton_SetToggleFunction(SandE.o_inventoryCheck, function()
+        mountToggle(SandE.o_inventoryCheck, IN_WORLD_UI_SETTING_HIDE_MOUNT_INVENTORY_UPGRADE, 3)
+    end)
 end
 
 function SandE:Initialize()
@@ -722,19 +814,46 @@ function SandE:UpdateUI()
 
     local index = 0
     local titleIndex = 0
+    local mount = {}
 
     if SandE.currentType == SandE.CURRENT then
         index = GetEquippedOutfitIndex() or 0
         titleIndex = GetCurrentTitleIndex() or 0
+        mount[1] = GetSetting(SETTING_TYPE_IN_WORLD, IN_WORLD_UI_SETTING_HIDE_MOUNT_STAMINA_UPGRADE)
+        mount[2] = GetSetting(SETTING_TYPE_IN_WORLD, IN_WORLD_UI_SETTING_HIDE_MOUNT_SPEED_UPGRADE)
+        mount[3] = GetSetting(SETTING_TYPE_IN_WORLD, IN_WORLD_UI_SETTING_HIDE_MOUNT_INVENTORY_UPGRADE)
     else
         index = SandE.sv.UserOutfit[SandE.currentIndex]
+
+        if SandE.sv.UserTitle[SandE.currentIndex] == nil then
+            SandE.sv.UserTitle[SandE.currentIndex] = 0
+        end
+
         titleIndex = SandE.sv.UserTitle[SandE.currentIndex]
+
+        if SandE.sv.UserMountOptions[SandE.currentIndex] == nil then
+            SandE.sv.UserMountOptions[SandE.currentIndex] = {
+                GetSetting(SETTING_TYPE_IN_WORLD, IN_WORLD_UI_SETTING_HIDE_MOUNT_STAMINA_UPGRADE),
+                GetSetting(SETTING_TYPE_IN_WORLD, IN_WORLD_UI_SETTING_HIDE_MOUNT_SPEED_UPGRADE),
+                GetSetting(SETTING_TYPE_IN_WORLD, IN_WORLD_UI_SETTING_HIDE_MOUNT_INVENTORY_UPGRADE)
+            }
+        end
+
+        mount[1] = SandE.sv.UserMountOptions[SandE.currentIndex][1]
+        mount[2] = SandE.sv.UserMountOptions[SandE.currentIndex][2]
+        mount[3] = SandE.sv.UserMountOptions[SandE.currentIndex][3]
     end
 
-    if SandE.currentIndex ~= -1 then
-        SandE.comboBox3:SetSelectedItem(SandE:getEntryName(index, SandE:GetOutfitName(index)))
-        SandE.comboBox4:SetSelectedItem(SandE:getEntryName(index, SandE:GetTitle(titleIndex)))
-    end
+    SandE.outfitComboBox:SetSelectedItem(SandE:getEntryName(index, SandE:GetOutfitName(index)))
+    SandE.titleComboBox:SetSelectedItem(SandE:getEntryName(index, SandE:GetTitle(titleIndex)))
+
+    if mount[1] == "0" then mount[1] = true else mount[1] = false end
+    if mount[2] == "0" then mount[2] = true else mount[2] = false end
+    if mount[3] == "0" then mount[3] = true else mount[3] = false end
+
+    ZO_CheckButton_SetCheckState(SandE.o_stamCheck, mount[1])
+    ZO_CheckButton_SetCheckState(SandE.o_speedCheck, mount[2])
+    ZO_CheckButton_SetCheckState(SandE.o_inventoryCheck, mount[3])
 
     Outfit_UI_Button:SetHidden(not SandE.sv.ui.showIcon)
     Outfit_UI_ButtonLabel:SetHidden(not SandE.sv.ui.showIcon)
