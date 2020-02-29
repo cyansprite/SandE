@@ -1,6 +1,7 @@
 SandE = {}
 
 local SandE = SandE
+local SandEZone = SandEZone
 
 SandE.name = "SandE"
 SandE.version = 1.3
@@ -139,7 +140,7 @@ SandE.Defaults.ui.showIcon = true
 SandE.Defaults.ui.autoShow = true
 
 local function createSettings()
-    local LAM = LibStub("LibAddonMenu-2.0")
+    local LAM = LibAddonMenu2
 
     local settingsWindowData = {
         type = "panel",
@@ -181,6 +182,10 @@ end
 
 function toggleSandEUI()
     SandEWindow:SetHidden(not SandEWindow:IsHidden())
+end
+
+function SandE:toggleZoneFrame()
+    SandEZoneFrame:SetHidden(not SandEZoneFrame:IsHidden())
 end
 
 function selectSandEKeyBinding(bind)
@@ -865,6 +870,14 @@ function SandE:CD()
     for _, i in ipairs(SandE.COLLECTIBLES) do
         SandE.currentCurrent[i] = GetActiveCollectibleByType(i)
     end
+end
+
+function SandE:PrintZones(i, x)
+    SandEZone:Print(i, x)
+end
+
+function SandE:PrintZones()
+    SandEZone:Print()
 end
 
 EVENT_MANAGER:RegisterForEvent(SandE.name, EVENT_COLLECTIBLE_UPDATED, function(eventCode, id, justUnlocked) -- {{{

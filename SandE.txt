@@ -7,5 +7,6 @@
 ## OptionalDependsOn: LibAddonMenu-2.0
 
 SandE.xml
+SandEZone.xml
 SandE.lua
 bindings.xml
